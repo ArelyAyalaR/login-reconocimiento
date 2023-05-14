@@ -85,16 +85,17 @@ class App:
         ruta_exe = 'C:/Users/Lenovo/Documents/Biblioteca_Project/Biblioteca-/BibliotecaProject/bin/Debug/net6.0-windows/BibliotecaProject.exe'
         name = util.recognize(self.most_recent_capture_arr, self.db_dir)
         codigo = self.get_user_code(name)
+        id = self.get_user_id(name)
 
         # Gente Biblioteca
-        query = 'INSERT INTO gente_biblioteca (codigoA) VALUES (%s)'
-        values = (codigo,)
+        query = 'INSERT INTO gente_biblioteca (usuario_id) VALUES (%s)'
+        values = (id,)
         cursor.execute(query, values)
         cnx.commit()
 
         # Agregue un nuevo registro a la tabla historial
-        query = 'INSERT INTO historial_gente_biblioteca (codigoAA, hora_ingreso) VALUES (%s, %s)'
-        values = (codigo, datetime.datetime.now())
+        query = 'INSERT INTO historial_gente_biblioteca (usuario_id, hora_ingreso) VALUES (%s, %s)'
+        values = (id, datetime.datetime.now())
         cursor.execute(query, values)
         cnx.commit()
 
@@ -113,20 +114,20 @@ class App:
         codigo = self.get_user_code(name)
         id = self.get_user_id(name)
 
-        query = "INSERT INTO salidas (nombre, codigoAlumn) VALUES (%s, %s)"
-        values = (name, codigo,)
+        query = "INSERT INTO salidas (id_usuario) VALUES (%s)"
+        values = (id,)
         cursor.execute(query, values)
         cnx.commit()
 
         # Agregue un nuevo registro a la tabla historial
-        query = 'UPDATE historial_gente_biblioteca SET hora_salida = %s WHERE codigoAA = %s ORDER BY id DESC LIMIT 1'
-        values = (datetime.datetime.now(), codigo,)
+        query = 'UPDATE historial_gente_biblioteca SET hora_salida = %s WHERE usuario_id = %s ORDER BY usuario_id DESC LIMIT 1'
+        values = (datetime.datetime.now(), id,)
         cursor.execute(query, values)
         cnx.commit()
 
         # Eliminación de registro de login en la tabla gente_biblioteca_b
-        query = "DELETE FROM gente_biblioteca WHERE codigoA=%s"
-        values = (codigo,)
+        query = "DELETE FROM gente_biblioteca WHERE usuario_id =%s"
+        values = (id,)
         cursor.execute(query, values)
         cnx.commit()
 
@@ -192,16 +193,26 @@ class App:
         is_admin = self.is_admin.get()
         name = self.entry_text_register_new_user.get(1.0, "end-1c")
         codigo = self.entry_text_register_new_user_codigo.get(1.0, "end-1c")
-        #id = self.get_user_id(name)
         embeddings = face_recognition.face_encodings(self.register_new_user_capture)[0]
 
         file = open(os.path.join(self.db_dir, '{}.pickle'.format(name)), 'wb')
         pickle.dump(embeddings, file)
 
+        if is_admin == 1:
+            # Inserta la información en la tabla administrativos
+            query = "INSERT INTO usuarios (nombre, codigo_administrativo, esAdmin) VALUES (%s, %s, %s)"
+            cursor.execute(query, (name, codigo, is_admin))
+            cnx.commit()
+        else:
+            # Inserta la información en la tabla alumnos
+            query = "INSERT INTO usuarios (nombre, codigo_alumno, esAdmin) VALUES (%s, %s, %s)"
+            cursor.execute(query, (name, codigo, is_admin))
+            cnx.commit()
+
         # Inserta la información en la tabla usuarios
-        query = "INSERT INTO usuarios (nombre, codigoAlumm, esAdmin) VALUES  (%s, %s, %s)"
-        cursor.execute(query, (name, codigo, is_admin))
-        cnx.commit()
+        #query = "INSERT INTO usuarios (nombre, codigo, esAdmin) VALUES  (%s, %s, %s)"
+        #cursor.execute(query, (name, codigo, is_admin))
+        #cnx.commit()
 
         util.msg_box('¡Éxito!', 'usuario registrado correctamente!')
 
